@@ -27,4 +27,4 @@ runs:
       env:
         INPUT_FUNCTION_NAME: ${{ inputs.function-name }}
         INPUT_PROVISIONED_CONCURRENCY: ${{ inputs.provisioned-concurrency }}
-        API_ID: ${{ inputs.api-id }}
+        INPUT_API_ID: ${{ inputs.api-id }}
