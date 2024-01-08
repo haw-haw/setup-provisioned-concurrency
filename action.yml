@@ -1,6 +1,6 @@
 name: 'Setup and Cleanup Provisioned Concurrency for AWS Lambda'
 description: 'Sets up provisioned concurrency for a specified AWS Lambda function and cleans up older versions'
-author: 'IronCloud'
+author: 'haw-haw'
 branding:
   color: orange
   icon: arrow-up-right
@@ -11,6 +11,9 @@ inputs:
   provisioned-concurrency:
     description: 'Number of provisioned concurrency'
     required: true
+  api-id:
+    description: 'ID of API'
+    required: false
 outputs:
   new-version:
     description: 'The new version number of the Lambda function'
@@ -24,3 +27,4 @@ runs:
       env:
         INPUT_FUNCTION_NAME: ${{ inputs.function-name }}
         INPUT_PROVISIONED_CONCURRENCY: ${{ inputs.provisioned-concurrency }}
+        API_ID: ${{ inputs.api-id }}
