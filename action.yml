@@ -1,6 +1,6 @@
 name: 'Setup and Cleanup Provisioned Concurrency for AWS Lambda'
 description: 'Sets up provisioned concurrency for a specified AWS Lambda function and cleans up older versions'
-author: 'haw-haw'
+author: 'IronCloud'
 branding:
   color: orange
   icon: arrow-up-right
@@ -19,6 +19,8 @@ outputs:
     description: 'The new version number of the Lambda function'
   provisioned-concurrency:
     description: 'The provisioned concurrency count that was set'
+  function-name-full: 
+    description: 'The lambda function name with version if it exists'
 runs:
   using: 'composite'
   steps:

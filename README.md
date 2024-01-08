@@ -62,15 +62,22 @@ jobs:
         aws-region: us-west-2
 
     - name: Deploy Chalice App
+      id: deploy
       run: |
         cd my-app/
-        chalice deploy        
+        chalice deploy
+        DEPLOY_OUTPUT=$(chalice deploy | tee /dev/fd/2)
+        if [[ "${DEPLOY_OUTPUT}" =~ [Hh][Tt][Tt][Pp][Ss]://([A-Za-z0-9]+)\.execute-api\.[^.]+\.amazonaws\.com ]]; then
+          API_ID="${BASH_REMATCH[1]}"
+          echo "API_ID=${API_ID}" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Setup Provisioned Concurrency
       uses: IronCloud/setup-provisioned-concurrency@v2
       with:
         function-name: 'your-lambda-function-name'
         provisioned-concurrency: 5
+        api-id: "${{ steps.deploy.outputs.API_ID }}"
 ```
 
 Replace `your-github-username` with your GitHub username and `your-lambda-function-name` with the name of your Lambda function.
@@ -81,11 +88,13 @@ Replace `your-github-username` with your GitHub username and `your-lambda-functi
 |--------------------------|-----------------------------------------------------|----------|
 | `function-name`          | The name of the AWS Lambda function.                | Yes      |
 | `provisioned-concurrency`| The number of provisioned concurrency to set up.    | Yes      |
+| `api-id`                 | The id of the api                                   | No       |
 
 ## Outputs
 
 - `new-version`: The new version of the Lambda function that was published.
 - `provisioned-concurrency`: The number of provisioned concurrency that was set up.
+- `function-name-full`: The lambda function name with version if it exists.
 
 ## Contributing
 
