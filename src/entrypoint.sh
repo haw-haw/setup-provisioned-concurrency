@@ -63,7 +63,7 @@ update_api_resource() {
     echo "==resource id: ${id}"
     METHODS=$(aws apigateway get-resources \
       --rest-api-id "${INPUT_API_ID}" \
-      --query "items[?id==\'${id}\'].resourceMethods | [0] | keys(@)" \
+      --query "items[?id=='${id}'].resourceMethods | [0] | keys(@)" \
       --output text)
     for method in ${METHODS}
     do
