@@ -27,7 +27,10 @@ install_aws_cli() {
 # Publish a new version for Lambda function
 publish_lambda_version() {
   echo "Publishing a new version for Lambda function: $INPUT_FUNCTION_NAME..."
-  NEW_VERSION=$(aws lambda publish-version --function-name "$INPUT_FUNCTION_NAME" --query "Version" --output text)
+  NEW_VERSION=$(aws lambda publish-version \
+    --function-name "$INPUT_FUNCTION_NAME" \
+    --query "Version" \
+    --output text)
   echo "Successfully published new version: $NEW_VERSION"
 
   echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
@@ -45,12 +48,22 @@ setup_provisioned_concurrency() {
   echo "PROVISIONED_CONCURRENCY=$INPUT_PROVISIONED_CONCURRENCY" >> "$GITHUB_ENV"
 }
 
+# Add permissions to new version of function
+add_permissions_lambda() {
+  ACCOUNT_ID=$(aws sts get-caller-identity \
+    --query "Account" \
+    --output text)
+  REGION="ap-southeast-1"
+  aws lambda add-permission \
+    --function-name arn:aws:lambda:${REGION}:${ACCOUNT_ID}:function:${INPUT_FUNCTION_NAME}:${NEW_VERSION} \
+    --statement-id apigw-${INPUT_API_ID}-invoke \
+    --action lambda:InvokeFunction \
+    --principal apigateway.amazonaws.com  \
+    --source-arn "arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${INPUT_API_ID}/*/*"
+}
+
 # Update API's resource
 update_api_resource() {
-  if [ -z "${INPUT_API_ID}" ]; then
-    echo "No API ID provided, skipping API updating."
-    return
-  fi
   new_function_name_full="${INPUT_FUNCTION_NAME}:${NEW_VERSION}"
   echo "Updating API GateWay's API(id: ${INPUT_API_ID}) resource's backend"
   API_RESOURCE_IDS=$(aws apigateway get-resources \
@@ -61,10 +74,14 @@ update_api_resource() {
   for id in ${API_RESOURCE_IDS}
   do
     echo "==resource id: ${id}"
-    METHODS=$(aws apigateway get-resources \
+    resource=$(aws apigateway get-resources \
       --rest-api-id "${INPUT_API_ID}" \
-      --query "items[?id=='${id}'].resourceMethods | [0] | keys(@)" \
-      --output text)
+      --query "items[?id=='${id}']")
+    if [[ "$resource" == "[]" ]]; then
+      echo "No HTTP method for resource with id: ${id}"
+      continue
+    fi
+    METHODS=$(echo "${resource}" | jq ".[0].resourceMethods | keys")
     for method in ${METHODS}
     do
       echo "====method: ${method}"
@@ -126,7 +143,12 @@ main() {
   install_aws_cli
   publish_lambda_version
   setup_provisioned_concurrency
-  update_api_resource
+  if [ -z "${INPUT_API_ID}" ]; then
+    echo "No API ID provided, skipping API updating."
+  else
+    add_permissions_lambda
+    update_api_resource
+  fi
   cleanup_old_versions
 }
 
