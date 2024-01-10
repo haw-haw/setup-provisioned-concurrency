@@ -74,14 +74,14 @@ update_api_resource() {
   for id in ${API_RESOURCE_IDS}
   do
     echo "==resource id: ${id}"
-    resource=$(aws apigateway get-resources \
+    resource_method=$(aws apigateway get-resources \
       --rest-api-id "${INPUT_API_ID}" \
-      --query "items[?id=='${id}']")
-    if [[ "$resource" == "[]" ]]; then
+      --query "items[?id=='${id}'].resourceMethods")
+    if [[ "$resource_method" == "[]" ]]; then
       echo "No HTTP method for resource with id: ${id}"
       continue
     fi
-    METHODS=$(echo "${resource}" | jq -r '.[0].resourceMethods | keys | join(" ")')
+    METHODS=$(echo "${resource_method}" | jq -r '.[0] | keys | join(" ")')
     for method in ${METHODS}
     do
       echo "====method: ${method}"
