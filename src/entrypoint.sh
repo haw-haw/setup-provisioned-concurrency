@@ -81,7 +81,7 @@ update_api_resource() {
       echo "No HTTP method for resource with id: ${id}"
       continue
     fi
-    METHODS=$(echo "${resource}" | jq ".[0].resourceMethods | keys")
+    METHODS=$(echo "${resource}" | jq -r '.[0].resourceMethods | keys | join(" ")')
     for method in ${METHODS}
     do
       echo "====method: ${method}"
