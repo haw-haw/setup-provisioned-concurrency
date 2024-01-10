@@ -14,6 +14,11 @@ inputs:
   api-id:
     description: 'ID of API'
     required: false
+  stage-name:
+    description: 'Name of Stage'
+    required: false
+    default: 'dev'
+    type: string
 outputs:
   new-version:
     description: 'The new version number of the Lambda function'
@@ -30,3 +35,4 @@ runs:
         INPUT_FUNCTION_NAME: ${{ inputs.function-name }}
         INPUT_PROVISIONED_CONCURRENCY: ${{ inputs.provisioned-concurrency }}
         INPUT_API_ID: ${{ inputs.api-id }}
+        INPUT_STAGE_NAME: ${{ inputs.stage-name }}

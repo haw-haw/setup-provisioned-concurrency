@@ -138,6 +138,13 @@ cleanup_old_versions() {
   done
 }
 
+# redeploy api
+deploy_api() {
+  aws apigateway create-deployment \
+    --stage-name ${INPUT_STAGE_NAME} \
+    --rest-api-id "${INPUT_API_ID}"
+}
+
 # Main script execution
 main() {
   install_aws_cli
@@ -148,6 +155,11 @@ main() {
   else
     add_permissions_lambda
     update_api_resource
+    if [ -z "${INPUT_STAGE_NAME}" ]; then
+      echo "No STAGE NAME provided, skipping API redeploying."
+    else
+      deploy_api
+    fi
   fi
   cleanup_old_versions
 }

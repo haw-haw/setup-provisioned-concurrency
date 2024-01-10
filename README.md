@@ -84,11 +84,12 @@ Replace `your-github-username` with your GitHub username and `your-lambda-functi
 
 ## Inputs
 
-| Input                    | Description                                         | Required |
-|--------------------------|-----------------------------------------------------|----------|
-| `function-name`          | The name of the AWS Lambda function.                | Yes      |
-| `provisioned-concurrency`| The number of provisioned concurrency to set up.    | Yes      |
-| `api-id`                 | The id of the api                                   | No       |
+| Input                    | Description                                     | Required | Default |
+|--------------------------|-------------------------------------------------|----------|---------|
+| `function-name`          | The name of the AWS Lambda function.            | Yes      |         |
+| `provisioned-concurrency`| The number of provisioned concurrency to set up.| Yes      |         |
+| `api-id`                 | The id of the api                               | No       |         |
+| `stage-name`             | The stage name when redeploy api                | No       | 'dev'   |
 
 ## Outputs
 
