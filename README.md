@@ -47,8 +47,13 @@ on:
       - main
 
 jobs:
-  setup:
+  deploy-job:
     runs-on: ubuntu-latest
+
+    outputs:
+      FUNCTION_NAMES: ${{ steps.deploy-step.outputs.FUNCTION_NAMES }}
+      API_ID: ${{ steps.deploy-step.outputs.API_ID }}
+      STAGE_NAME: ${{ steps.deploy-step.outputs.STAGE_NAME }}
 
     steps:
     - name: Checkout code
@@ -62,22 +67,40 @@ jobs:
         aws-region: us-west-2
 
     - name: Deploy Chalice App
-      id: deploy
+      id: deploy-step
       run: |
         cd my-app/
-        chalice deploy
-        DEPLOY_OUTPUT=$(chalice deploy | tee /dev/fd/2)
-        if [[ "${DEPLOY_OUTPUT}" =~ [Hh][Tt][Tt][Pp][Ss]://([A-Za-z0-9]+)\.execute-api\.[^.]+\.amazonaws\.com ]]; then
+        DEPLOY_OUTPUT=$(chalice deploy --stage dev | tee /dev/fd/2)
+        FUNCTION_NAMES=$(echo "$DEPLOY_OUTPUT" | grep ":function:" | awk -F":function:" '{printf("%s\"%s\"", (NR==1?"[":","), $2)} END {print "]"}' | jq -c |  tee /dev/fd/2)
+        echo "FUNCTION_NAMES=${FUNCTION_NAMES}" >> "$GITHUB_OUTPUT"
+        if [[ "${DEPLOY_OUTPUT}" =~ [Hh][Tt][Tt][Pp][Ss]://([A-Za-z0-9]+)\.execute-api\.[^.]+\.amazonaws\.com\/([^/]+)\/ ]]; then
           API_ID="${BASH_REMATCH[1]}"
+          STAGE_NAME="${BASH_REMATCH[2]}"
           echo "API_ID=${API_ID}" >> "$GITHUB_OUTPUT"
+          echo "STAGE_NAME=${STAGE_NAME}" >> "$GITHUB_OUTPUT"
         fi
 
-    - name: Setup Provisioned Concurrency
-      uses: IronCloud/setup-provisioned-concurrency@v2
-      with:
-        function-name: 'your-lambda-function-name'
-        provisioned-concurrency: 5
-        api-id: "${{ steps.deploy.outputs.API_ID }}"
+  setup-provisioned-concurrency:
+    needs: deploy-job
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        function-name: ${{ fromJson(needs.deploy-job.outputs.FUNCTION_NAMES) }}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-west-2
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup Provisioned Concurrency
+        uses: haw-haw/setup-provisioned-concurrency@v3
+        with:
+          function-name: "${{ matrix.function-name }}"
+          provisioned-concurrency: 2
+          api-id: "${{ needs.deploy-job.outputs.API_ID }}"
+          stage-name: "${{ needs.deploy-job.outputs.STAGE_NAME }}"
 ```
 
 Replace `your-github-username` with your GitHub username and `your-lambda-function-name` with the name of your Lambda function.
