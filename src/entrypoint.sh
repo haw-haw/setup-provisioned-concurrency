@@ -64,8 +64,10 @@ add_permissions_lambda() {
 
 # Update API's resource
 update_api_resource() {
-  new_function_name_full="${INPUT_FUNCTION_NAME}:${NEW_VERSION}"
   echo "Updating API GateWay's API(id: ${INPUT_API_ID}) resource's backend"
+  new_function_name_full="${INPUT_FUNCTION_NAME}:${NEW_VERSION}"
+  API_CHANGED=0
+
   API_RESOURCE_IDS=$(aws apigateway get-resources \
     --rest-api-id "${INPUT_API_ID}" \
     --query 'items[].id' \
@@ -108,6 +110,7 @@ update_api_resource() {
           op=replace,path='/uri',value="${methodIntegration_uri_new}" || \
         echo "Failed to update uri from ${methodIntegration_uri} to ${methodIntegration_uri_new}"
       echo "======replace \"${function_name_full}\" with \"${new_function_name_full}\" success."
+      API_CHANGED=1
     done
   done
 
@@ -157,8 +160,12 @@ main() {
     update_api_resource
     if [ -z "${INPUT_STAGE_NAME}" ]; then
       echo "No STAGE NAME provided, skipping API redeploying."
-    else
+    elif [ ${API_CHANGED} -eq 0 ]; then
+      echo "API unchanged, skip API redeploying."
+    elif [ ${API_CHANGED} -eq 1 ]; then
       deploy_api
+    else
+      echo "API_CHANGED: ${API_CHANGED} error."
     fi
   fi
   cleanup_old_versions
