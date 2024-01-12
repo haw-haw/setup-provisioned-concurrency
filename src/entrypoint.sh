@@ -91,7 +91,8 @@ update_api_resource() {
         --rest-api-id "${INPUT_API_ID}" \
         --resource-id "${id}" \
         --http-method "${method}" \
-        --query "methodIntegration.uri")
+        --query "methodIntegration.uri") || \
+          echo "aws apigateway get-method --rest-api-id \"${INPUT_API_ID}\" --resource-id \"${id}\" --http-method \"${method}\" --query \"methodIntegration.uri\")"
       [[ ${methodIntegration_uri} =~ ":function:" ]] || continue
       function_name_full=$(echo "${methodIntegration_uri}" | \
         awk -F":function:" '{print $2}' | \
