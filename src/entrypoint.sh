@@ -68,22 +68,21 @@ update_api_resource() {
   new_function_name_full="${INPUT_FUNCTION_NAME}:${NEW_VERSION}"
   API_CHANGED=0
 
-  API_RESOURCE_IDS=$(aws apigateway get-resources \
+  API_RESOURCE_ID_METHOD=$(aws apigateway get-resources \
     --rest-api-id "${INPUT_API_ID}" \
-    --query 'items[].id' \
-    --output text)
+    --query "items[?resourceMethods].{id: id, resourceMethods: resourceMethods}")
 
-  for id in ${API_RESOURCE_IDS}
+  count=$(echo "${API_RESOURCE_ID_METHOD}" | \
+    jq '. | length')
+
+  for (( i=0; i<count; i++ ))
   do
+    id=$(echo "${API_RESOURCE_ID_METHOD}" | \
+      jq ".[${i}].id")
     echo "==resource id: ${id}"
-    resource_method=$(aws apigateway get-resources \
-      --rest-api-id "${INPUT_API_ID}" \
-      --query "items[?id=='${id}'].resourceMethods")
-    if [[ "$resource_method" == "[]" ]]; then
-      echo "No HTTP method for resource with id: ${id}"
-      continue
-    fi
-    METHODS=$(echo "${resource_method}" | jq -r '.[0] | keys | join(" ")')
+    METHODS=$(echo "${API_RESOURCE_ID_METHOD}" | \
+      jq ".[${i}].resourceMethods | keys " | \
+      jq -r 'join(" ")')
     for method in ${METHODS}
     do
       echo "====method: ${method}"
@@ -100,6 +99,7 @@ update_api_resource() {
       [[ "${function_name_full}" == "${new_function_name_full}" ]] && continue
       function_name=$(echo "${function_name_full}" | \
         cut -d':' -f1)
+      echo "old function name:${function_name};new function name:${INPUT_FUNCTION_NAME}"
       [[ "${function_name}" == "${INPUT_FUNCTION_NAME}" ]] || continue
       methodIntegration_uri_new=${methodIntegration_uri/$function_name_full/$new_function_name_full}
       aws apigateway update-integration \
@@ -144,7 +144,7 @@ cleanup_old_versions() {
 # redeploy api
 deploy_api() {
   aws apigateway create-deployment \
-    --stage-name ${INPUT_STAGE_NAME} \
+    --stage-name "${INPUT_STAGE_NAME}" \
     --rest-api-id "${INPUT_API_ID}"
 }
 
