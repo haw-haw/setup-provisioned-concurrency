@@ -78,7 +78,7 @@ update_api_resource() {
   for (( i=0; i<count; i++ ))
   do
     id=$(echo "${API_RESOURCE_ID_METHOD}" | \
-      jq ".[${i}].id")
+      jq -r ".[${i}].id")
     echo "==resource id: ${id}"
     METHODS=$(echo "${API_RESOURCE_ID_METHOD}" | \
       jq ".[${i}].resourceMethods | keys " | \
@@ -92,7 +92,7 @@ update_api_resource() {
         --resource-id "${id}" \
         --http-method "${method}" \
         --query "methodIntegration.uri") || \
-          echo "aws apigateway get-method --rest-api-id \"${INPUT_API_ID}\" --resource-id \"${id}\" --http-method \"${method}\" --query \"methodIntegration.uri\")"
+          echo "aws apigateway get-method --rest-api-id \"${INPUT_API_ID}\" --resource-id \"${id}\" --http-method \"${method}\" --query \"methodIntegration.uri\""
       [[ ${methodIntegration_uri} =~ ":function:" ]] || continue
       function_name_full=$(echo "${methodIntegration_uri}" | \
         awk -F":function:" '{print $2}' | \
